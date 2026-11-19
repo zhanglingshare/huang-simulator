@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>黄仁勋未来决策模拟器 · 社会计算沙箱</title>
-<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Saira+Condensed:wght@500;600;700;800;900&display=swap">
 <style>
 :root{
   --bg:#080b12;--bg2:#0c111d;--panel:#121a2c;--panel2:#172136;--line:#22304d;
@@ -216,6 +216,87 @@ body.land #content{padding-bottom:34px}
   margin-top:11px;line-height:1.55}
 .readout .rt{color:#3ee0ff;font-weight:800;margin-right:7px}
 .readout b{color:var(--txt);font-weight:700}
+
+/* ============================================================
+   2K 金属棱角设计系统 v2（全局覆盖，引擎逻辑不动）
+   ============================================================ */
+:root{
+  --gold:#d8b45a;--gold-l:#f3dd96;--gold-d:#8a6d2c;
+  --disp:"Saira Condensed","Noto Sans SC",sans-serif;
+  --clip-card:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);
+  --clip-tile:polygon(9px 0,100% 0,100% 100%,0 100%,0 9px);
+}
+body{background:
+  radial-gradient(900px 460px at 86% -10%,rgba(216,180,90,.10),transparent 60%),
+  radial-gradient(1100px 520px at 82% -12%,#16294a 0%,var(--bg) 55%),var(--bg)}
+h1,h2,h3,h4{font-family:var(--disp)}
+/* 卡片：棱角金属面 */
+.card{clip-path:var(--clip-card);border:1px solid rgba(216,180,90,.45);
+  background:
+   linear-gradient(160deg,rgba(243,221,150,.08),rgba(255,255,255,0) 26%,rgba(62,224,255,.05) 60%,rgba(0,0,0,.28)),
+   linear-gradient(180deg,#131d33,#0b1322 60%,#080d18)}
+.card h3{font-weight:800;letter-spacing:1.2px;text-transform:uppercase;font-size:15px;
+  padding-bottom:10px;border-bottom:1px solid rgba(216,180,90,.28);position:relative}
+.card h3::before{content:"";width:4px;height:15px;margin-right:2px;
+  background:linear-gradient(180deg,var(--gold-l),var(--gold));display:inline-block}
+/* KPI 棱角磁贴 */
+.kpi{clip-path:var(--clip-tile);border:1px solid rgba(216,180,90,.35);
+  background:linear-gradient(180deg,#16223b,#0c1424);padding:13px 10px}
+.kpi .v{font-family:var(--disp);font-weight:800;font-size:26px;letter-spacing:.5px}
+/* 按钮 */
+.btn{clip-path:var(--clip-tile);border:1px solid rgba(216,180,90,.4);font-weight:700;letter-spacing:.8px}
+.btn.primary{background:linear-gradient(100deg,#0e8aa8,#1a5fd0);border-color:transparent}
+.btn.ghost{background:rgba(255,255,255,.03);border-color:rgba(216,180,90,.4)}
+/* 小元素统一棱角 */
+.chip,.opt,.tag,details{clip-path:var(--clip-tile);border-radius:0}
+.opt h4{font-family:var(--disp);font-weight:700;letter-spacing:.8px}
+.barline .track{clip-path:var(--clip-tile);border-radius:0}
+.pn{clip-path:var(--clip-tile);border-radius:0;letter-spacing:.5px}
+.cv-wrap{clip-path:var(--clip-tile);border-radius:0;border-color:rgba(216,180,90,.3);
+  background:linear-gradient(180deg,#0e1728,#0a111d)}
+.legend i{border-radius:1px}
+canvas{border-radius:0}
+
+/* ===== 2K 收藏卡（首页） ===== */
+.fcard{clip-path:var(--clip-card);border:1.5px solid var(--gold);position:relative;
+  background:
+   radial-gradient(460px 300px at 50% -8%,rgba(90,162,255,.26),transparent 60%),
+   radial-gradient(420px 320px at 50% 112%,rgba(216,180,90,.16),transparent 62%),
+   linear-gradient(180deg,#121c33,#0a1222 58%,#070c16);overflow:hidden}
+.fcard::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(115deg,transparent 0 26px,rgba(243,221,150,.045) 26px 27px)}
+.fribbon{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;
+  clip-path:polygon(0 0,100% 0,100% 100%,0 calc(100% - 13px));
+  background:linear-gradient(90deg,rgba(216,180,90,.30),rgba(216,180,90,.06));
+  border-bottom:1px solid rgba(216,180,90,.5)}
+.fribbon .fr-team{font-weight:900;letter-spacing:2px;font-size:14px;color:var(--gold-l)}
+.fribbon .fr-title{font-size:11px;color:var(--sub);letter-spacing:1px}
+.fbody{position:relative;height:330px}
+.fbody::before{content:"";position:absolute;left:50%;top:48%;width:232px;height:232px;transform:translate(-50%,-50%);
+  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+  border:1px solid rgba(216,180,90,.25);background:rgba(216,180,90,.04);pointer-events:none}
+.fchar{position:absolute;left:50%;bottom:6px;height:96%;transform:translateX(-50%);z-index:3;
+  filter:drop-shadow(0 18px 24px rgba(0,0,0,.6));animation:floaty 4.2s ease-in-out infinite}
+.frate{position:absolute;top:14px;left:15px;z-index:5}
+.fnum{font-family:var(--disp);font-weight:900;font-size:66px;line-height:.9;
+  background:linear-gradient(180deg,#fff3cf,#d8b45a 55%,#9a7626);-webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 6px 18px rgba(216,180,90,.25)}
+.fpos{font-family:var(--disp);font-weight:800;font-size:18px;letter-spacing:3px;color:var(--gold-l);margin-top:2px}
+.fstats{position:absolute;top:14px;right:13px;z-index:5;display:flex;flex-direction:column;gap:7px;width:112px}
+.ftile{clip-path:var(--clip-tile);border:1px solid var(--c);padding:7px 8px 6px;text-align:right;
+  background:rgba(255,255,255,.04);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 22%,transparent),rgba(10,16,28,.55))}
+.ft-v{display:block;font-family:var(--disp);font-weight:800;font-size:25px;color:var(--c);line-height:1}
+.ft-l{font-size:10px;color:var(--sub);letter-spacing:1px}
+.fhex{padding:12px 14px 4px}
+.fhex .fhex-lab{font-size:10.5px;color:var(--mut);letter-spacing:2px;margin-bottom:6px}
+.farch{display:flex;align-items:center;gap:10px;padding:10px 15px 14px;flex-wrap:wrap}
+.farch-tag{font-family:var(--disp);font-weight:800;letter-spacing:1px;color:#0a1220;padding:4px 13px;
+  background:linear-gradient(160deg,#f3dd96,#d8b45a)}
+.farch-desc{font-size:10.5px;color:var(--sub);flex:1;min-width:120px}
+.fbet{margin-top:14px;padding:15px}
+.fbet-lab{font-size:11px;color:var(--mut);letter-spacing:1px;margin-bottom:10px}
+.circ .ci{clip-path:var(--clip-tile);border-radius:0}
 </style>
 </head>
 <body>
@@ -550,25 +631,22 @@ function closeSheet(){document.getElementById('sheet').classList.remove('open');
 const R={};
 R.open=el=>{el.innerHTML=`
 <div class="arena">
-  <div class="stage">
-    <div class="beam"></div>
-    <div class="platform"></div>
-    <img class="char" src="${CHAR_URL}" alt="黄仁勋">
-    <div class="rate"><div class="sbadge" id="ovrMean">${cardMean()}</div>
-      <div class="pos">CEO · 创始人</div>
-      <div class="pname">黄仁勋</div>
-      <div class="stars">★★★★★</div></div>
-    <div class="attrs">${ORDER.map(k=>{const v=Math.round(S.knobs[k]*100),c=ATTR_META[k][1];return`
-      <div class="arow"><div class="top"><span class="al">${ATTR_META[k][0]}</span><span class="av" id="av_${k}" style="color:${c}">${v}</span></div>
-        <div class="atrack"><div class="afill" id="af_${k}" style="width:${v}%;background:${c};color:${c}"></div></div></div>`;}).join('')}</div>
+  <div class="fcard">
+    <div class="fribbon"><span class="fr-team">NVIDIA</span><span class="fr-title">首席执行官 · 天生领袖</span></div>
+    <div class="fbody">
+      <div class="frate"><div class="fnum" id="ovrMean">${cardMean()}</div><div class="fpos">CEO</div></div>
+      <img class="fchar" src="${CHAR_URL}" alt="黄仁勋">
+      <div class="fstats">${ORDER.map(k=>{const v=Math.round(S.knobs[k]*100),c=ATTR_META[k][1];return`
+        <div class="ftile" style="--c:${c}"><span class="ft-v" id="av_${k}">${v}</span><span class="ft-l">${ATTR_META[k][0]}</span></div>`;}).join('')}
+      </div>
+    </div>
+    <div class="fhex"><div class="fhex-lab">五维形状 · SHAPE</div>
+      <div class="cv-wrap"><canvas id="cardRadar" height="300"></canvas></div></div>
+    <div class="farch"><span class="farch-tag" id="archName">${archetype()[0]}</span>
+      <span class="farch-desc" id="archDesc">${archetype()[1]}</span></div>
   </div>
-  <div class="radar-card">
-    <div class="arch-head"><span class="arch-tag" id="archName">${archetype()[0]}</span>
-      <span class="mut" id="archDesc" style="font-size:11px">${archetype()[1]}</span></div>
-    <div class="cv-wrap"><canvas id="cardRadar" height="300"></canvas></div>
-  </div>
-  <div class="betpanel">
-    <div class="lab-t">先凭直觉押一注（不评分，只对账）</div>
+  <div class="fcard fbet">
+    <div class="fbet-lab">先凭直觉押一注 · 不评分只对账</div>
     <div class="row">
       <button class="btn sm grow ${S.bet==='comeback'?'primary':''}" data-bet="comeback">能回来</button>
       <button class="btn sm grow ${S.bet==='no'?'primary':''}" data-bet="no">回不来</button></div>
