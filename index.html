@@ -183,6 +183,39 @@ body.land #content{padding-bottom:34px}
 .arch-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .arch-tag{font-weight:900;font-size:15px;color:#06121f;padding:4px 13px;border-radius:9px;
   background:linear-gradient(160deg,#7fe9ff,#3ee0ff);box-shadow:0 6px 16px rgba(62,224,255,.3)}
+/* ===== 球探报告 ===== */
+.scout-head{display:flex;align-items:center;gap:12px}
+.scout-avatar{width:58px;height:58px;border-radius:14px;object-fit:cover;border:1px solid var(--line);background:#0e1728}
+.scout-head .nm{font-weight:900;font-size:17px}
+.scout-head .pos{margin-top:3px}
+.verdict{margin-left:auto;font-weight:900;font-size:13px;color:#06121f;padding:7px 12px;border-radius:9px;
+  background:linear-gradient(160deg,#7fe9ff,#3ee0ff);box-shadow:0 6px 16px rgba(62,224,255,.3)}
+.dest-row{display:flex;align-items:center;gap:10px;margin:11px 0}
+.dest-row .dl{width:84px;font-size:12px;color:var(--sub);flex:0 0 auto}
+.dest-row .dv{width:52px;text-align:right;font-family:ui-monospace,monospace;font-weight:700;font-size:13px}
+.ib-track{position:relative;flex:1;height:10px;border-radius:6px;background:rgba(255,255,255,.07)}
+.ib-seg{position:absolute;top:0;bottom:0;border-radius:6px}
+.ib-med{position:absolute;top:-3px;bottom:-3px;width:3px;border-radius:2px;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.9)}
+.sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sw-col h4{font-size:12.5px;margin-bottom:9px}
+.sw-col.weak h4{color:var(--amb)}
+.mini-bar{display:flex;align-items:center;gap:8px;margin:7px 0}
+.mini-bar .l{font-size:11px;color:var(--sub);width:40px;flex:0 0 auto}
+.mini-bar .t{flex:1;height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.mini-bar .t i{display:block;height:100%;border-radius:4px}
+.mini-bar .n{font-size:11px;font-family:ui-monospace,monospace;width:30px;text-align:right}
+.obs-row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:8px 0;border-bottom:1px solid var(--line)}
+.obs-row:last-child{border-bottom:0}
+.conclusion{background:rgba(62,224,255,.08);border:1px solid rgba(62,224,255,.25);border-radius:12px;padding:13px;
+  font-size:13px;margin-top:6px}
+/* ===== 阵容场域 ===== */
+.field-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--sub);margin-top:10px}
+.field-legend i{width:14px;height:3px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
+/* 逐图解读 */
+.readout{border-left:2px solid #3ee0ff;padding:3px 0 3px 10px;font-size:12px;color:var(--sub);
+  margin-top:11px;line-height:1.55}
+.readout .rt{color:#3ee0ff;font-weight:800;margin-right:7px}
+.readout b{color:var(--txt);font-weight:700}
 </style>
 </head>
 <body>
@@ -397,6 +430,31 @@ function drawColumns(cv,labels,vals,color){
     ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x+3,h-22-bh,bw-6,bh,3);ctx.fill();
     if(labels){ctx.fillStyle='#64748f';ctx.font='9px sans-serif';ctx.textAlign='center';
       ctx.fillText(labels[i],x+bw/2,h-9);}});
+}
+function drawDensityStrips(cv,acc,states,quant){
+  const {ctx,w,h}=setupCanvas(cv);
+  ctx.clearRect(0,0,w,h);
+  const rows=states.length,padL=42,padR=38,rowH=h/rows,bins=46,plotW=w-padL-padR;
+  const xq=p=>padL+clamp(p)*plotW;
+  states.forEach((s,i)=>{
+    const top=i*rowH,bh=rowH-16,hist=new Array(bins).fill(0);
+    acc[s].forEach(v=>{const b=Math.min(bins-1,Math.floor(clamp(v)*bins));hist[b]++;});
+    const maxC=Math.max(...hist),col=SCOLOR[s];
+    ctx.strokeStyle='rgba(255,255,255,.08)';ctx.beginPath();
+    ctx.moveTo(padL,top+bh);ctx.lineTo(w-padR,top+bh);ctx.stroke();
+    for(let b=0;b<bins;b++){const bw=plotW/bins,x=padL+b*bw,hh=maxC?(hist[b]/maxC)*(bh-4):0;
+      ctx.fillStyle=col+'B3';ctx.fillRect(x+.6,top+bh-hh,Math.max(bw-1.2,.6),hh);}
+    const q=quant[s];
+    ctx.strokeStyle=col;ctx.lineWidth=1;ctx.beginPath();
+    ctx.moveTo(xq(q.P10),top+bh);ctx.lineTo(xq(q.P10),top+bh+4);
+    ctx.moveTo(xq(q.P90),top+bh);ctx.lineTo(xq(q.P90),top+bh+4);ctx.stroke();
+    ctx.strokeStyle='#fff';ctx.lineWidth=1.8;ctx.beginPath();
+    ctx.moveTo(xq(q.P50),top+1);ctx.lineTo(xq(q.P50),top+bh);ctx.stroke();
+    ctx.fillStyle='#9fb0c8';ctx.font='11px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(SHORT[s],2,top+bh/2);
+    ctx.fillStyle=col;ctx.font='bold 12px ui-monospace,monospace';
+    ctx.fillText(String(Math.round(q.P50*100)),w-padR+8,top+bh/2);
+  });
 }
 
 /* ================= 状态 ================= */
@@ -654,27 +712,71 @@ R.detail=el=>{const x=S.knobs,r=fullResults(x),m1=r.m1;
 let snaRAF=null;
 R.sna=el=>{
   if(snaRAF){cancelAnimationFrame(snaRAF);snaRAF=null;}
-  el.innerHTML=`
-  <div class="card"><h3>力导向网络 <span class="tag">点中心=黄仁勋</span></h3>
-    <div class="cv-wrap"><canvas id="fc" height="380"></canvas></div>
-    <div class="row" style="margin-top:10px"><button class="btn primary sm grow" id="iso">逐步隔离</button>
-      <button class="btn ghost sm grow" id="reset">重置</button></div></div>
-  <div class="grid2">
-    <div class="card" style="margin:0"><h3>介数中心度</h3><div id="bc"></div></div>
-    <div class="card" style="margin:0"><h3>枢纽度随隔离</h3><div class="cv-wrap"><canvas id="sl" height="180"></canvas></div></div></div>`;
-  const fg=new ForceGraph(DATA.edges,document.getElementById('fc'));let step=0;
-  function loop(){fg.tick();fg.draw();snaRAF=requestAnimationFrame(loop);}loop();
-  document.getElementById('iso').onclick=()=>{step++;fg.isolate(step);toast('已隔离 '+fg.removed.size+' 边');};
-  document.getElementById('reset').onclick=()=>{step=0;fg.reset();};
   const g=buildGraph(DATA.edges),hub=g.idx['黄仁勋本人'];
+  const POS={
+    '监管机构':[.14,.14],'独立董事':[.32,.21],'董事会成员（含董事长Harvey C. Jones）':[.5,.10],
+    '机构股东':[.68,.21],'独立律所Wachtell与检察官Joon H. Kim':[.86,.14],
+    '大客户（微软/谷歌/亚马逊/Meta/OpenAI）':[.15,.52],'黄仁勋本人':[.5,.48],
+    '员工群体':[.85,.56],'盟友战情室':[.24,.86],'临时CEO Colette Kress':[.5,.78]};
+  const links=DATA.edges.map(e=>({a:g.idx[e.source],b:g.idx[e.target],s:e.strength,rel:e.relation}));
+  const removed=new Set();
+  const hubEdges=links.map((l,i)=>({l,i})).filter(o=>o.l.a===hub||o.l.b===hub).sort((u,v)=>v.l.s-u.l.s);
+  let step=0;
+  const bRank=g.names.map((n,i)=>[n,g.between[i]]).sort((a,b)=>b[1]-a[1]);
+  const series=[];let adj=g.adj.map(r=>r.slice());
+  for(let rm=0;rm<=hubEdges.length;rm++){if(rm>0){const l=hubEdges[rm-1].l;adj[l.a][l.b]-=l.s;adj[l.b][l.a]-=l.s;}
+    series.push(adj[hub].reduce((a,b)=>a+b,0));}
+  const lc=rel=>rel==='合规'?'rgba(255,92,122,.85)':(rel==='治理'||rel==='雇佣')?'rgba(62,224,255,.55)':'rgba(139,123,255,.5)';
+  function draw(){
+    const cv=document.getElementById('formation'),{ctx,w,h}=setupCanvas(cv);
+    ctx.clearRect(0,0,w,h);
+    const grad=ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,'rgba(24,46,80,.5)');grad.addColorStop(1,'rgba(10,18,32,.3)');
+    ctx.fillStyle=grad;ctx.beginPath();ctx.roundRect(0,0,w,h,14);ctx.fill();
+    ctx.strokeStyle='rgba(62,224,255,.22)';ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.07)';ctx.beginPath();ctx.moveTo(0,h*.5);ctx.lineTo(w,h*.5);ctx.stroke();
+    ctx.beginPath();ctx.arc(w/2,h*.5,30,0,7);ctx.stroke();
+    links.forEach((l,i)=>{const A=POS[g.names[l.a]],B=POS[g.names[l.b]];
+      const x1=A[0]*w,y1=A[1]*h,x2=B[0]*w,y2=B[1]*h,cut=removed.has(i);
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+      if(cut){ctx.strokeStyle='rgba(120,132,150,.28)';ctx.lineWidth=.8;ctx.setLineDash([4,4]);}
+      else{ctx.strokeStyle=lc(l.rel);ctx.lineWidth=1+l.s*1.6;ctx.setLineDash([]);}
+      ctx.stroke();ctx.setLineDash([]);});
+    g.names.forEach((n,i)=>{const P=POS[n],x=P[0]*w,y=P[1]*h,r=7+g.between[i]*16,ishub=i===hub;
+      ctx.beginPath();ctx.arc(x,y,r,0,7);
+      if(ishub){ctx.fillStyle='#3ee0ff';ctx.shadowColor='rgba(62,224,255,.8)';ctx.shadowBlur=18;}
+      else{ctx.fillStyle='#172136';ctx.shadowBlur=0;}ctx.fill();ctx.shadowBlur=0;
+      ctx.lineWidth=ishub?2:1;ctx.strokeStyle=ishub?'#fff':'#3ee0ff';ctx.stroke();
+      ctx.fillStyle='#e8eefc';ctx.font='10.5px sans-serif';ctx.textAlign='center';
+      ctx.fillText(shortName(n),x,y+r+12);});
+  }
+  el.innerHTML=`
+  <div class="card"><h3>阵容场域 <span class="tag">阵型 · 化学连线</span></h3>
+    <div class="cv-wrap"><canvas id="formation" height="440"></canvas></div>
+    <div class="row" style="margin-top:10px"><button class="btn primary sm grow" id="iso">逐步隔离老黄</button>
+      <button class="btn ghost sm grow" id="reset">重置</button></div>
+    <div class="field-legend">
+      <span><i style="background:#3ee0ff"></i>治理/雇佣</span>
+      <span><i style="background:#ff5c7a"></i>合规</span>
+      <span><i style="background:#8b7bff"></i>资金/信息/盟友</span>
+      <span class="mut">节点大小=介数中心度</span></div>
+    <div class="readout"><span class="rt">解读</span>老黄介数 <b>${g.between[hub].toFixed(3)}</b> 全场最高，
+      是治理与信息的必经节点，<b>${hubEdges.length}</b> 条关系直接连他，结构高度中心化；点隔离可看到切断这些连线后网络如何重组。</div></div>
+  <div class="grid2">
+    <div class="card" style="margin:0"><h3>介数中心度</h3><div id="bc"></div>
+      <div class="readout"><span class="rt">解读</span>介数衡量“必经之路”：老黄 <b>${bRank[0][1].toFixed(3)}</b>、
+        ${shortName(bRank[1][0])} <b>${bRank[1][1].toFixed(3)}</b>、${shortName(bRank[2][0])} <b>${bRank[2][1].toFixed(3)}</b>
+        三节点控制大部分信息流；介数为 0 者处于边缘。</div></div>
+    <div class="card" style="margin:0"><h3>枢纽度随隔离</h3><div class="cv-wrap"><canvas id="sl" height="180"></canvas></div>
+      <div class="readout"><span class="rt">解读</span>每切断一条强关系，加权枢纽度由 <b>${series[0].toFixed(2)}</b>
+        降至 <b>${series[series.length-1].toFixed(2)}</b>；曲线越陡，网络对老黄的依赖越集中。</div></div></div>`;
+  draw();
+  document.getElementById('iso').onclick=()=>{step=Math.min(step+1,hubEdges.length);
+    removed.clear();for(let n=0;n<step;n++)removed.add(hubEdges[n].i);draw();toast('已隔离 '+removed.size+' 条关系');};
+  document.getElementById('reset').onclick=()=>{step=0;removed.clear();draw();};
   document.getElementById('bc').innerHTML=g.names.map((n,i)=>`<div class="barline"><span class="lab" style="width:64px;font-size:11px">${shortName(n)}</span>
     <div class="track"><div class="fill" style="width:${g.between[i]*100}%;background:${i===hub?'#3ee0ff':'#8b7bff'}"></div></div>
     <span class="num">${g.between[i].toFixed(3)}</span></div>`).join('');
-  const links=DATA.edges.map(e=>({a:g.idx[e.source],b:g.idx[e.target],s:e.strength}));
-  const hl=links.filter(l=>l.a===hub||l.b===hub).sort((u,v)=>v.s-u.s);
-  const series=[];let adj=g.adj.map(r=>r.slice());
-  for(let rm=0;rm<=hl.length;rm++){if(rm>0){const l=hl[rm-1];adj[l.a][l.b]-=l.s;adj[l.b][l.a]-=l.s;}
-    series.push(adj[hub].reduce((a,b)=>a+b,0));}
   drawLine(document.getElementById('sl'),[{data:series,color:'#3ee0ff'}],{labels:series.map((_,i)=>i)});
 };
 
@@ -737,22 +839,49 @@ R.history=el=>{const m=DATA.hist_metrics;
     <div class="sub" style="font-size:12px">${m.calibration_note}；编码者知结局存在事后偏差，本结果为机制检验，非样本外预测。</div></div></details>`;
 };
 
-R.profile=el=>{const p=pointM1(S.knobs);
-  const agree=Object.values(S.viewReact).filter(v=>v==='yes').length,tags=[];
-  if(S.bet==='comeback')tags.push('直觉回归派');else if(S.bet==='no')tags.push('直觉切割派');
-  if(S.conf>=70)tags.push('高信心');else if(S.conf<=35)tags.push('谨慎');
-  if(agree>=4)tags.push('易认同叙事');tags.push(S.theory==='power'?'博弈偏好':'系统偏好');
+R.profile=el=>{
+  const fr=fullResults(S.knobs),m1=fr.m1,p=pointM1(S.knobs),arch=archetype();
+  const ranked=ORDER.map(k=>[k,S.knobs[k]]).sort((a,b)=>b[1]-a[1]);
+  const strong=ranked.slice(0,2),weak=ranked.slice(-2),topIdx=p.indexOf(Math.max(...p));
+  const topS=STATES[topIdx],topQ=m1[topS],nm=k=>ATTR_META[k][0];
+  const sobTop=ORDER.map(k=>[k,DATA.sobol[k].ST]).sort((a,b)=>b[1]-a[1])[0];
+  const mb=([k,v])=>{const c=ATTR_META[k][1];return`
+    <div class="mini-bar"><span class="l">${nm(k)}</span>
+      <span class="t"><i style="width:${v*100}%;background:${c}"></i></span>
+      <span class="n">${Math.round(v*100)}</span></div>`;};
   el.innerHTML=`
-  <div class="card"><h3>决策画像</h3>
-    <div class="row wrap">${tags.map(t=>`<span class="chip on">${t}</span>`).join('')}</div>
-    <div class="divider"></div>
-    <div class="row between"><span class="sub">押注</span><b>${S.bet==='comeback'?'能回来':S.bet==='no'?'回不来':'未押'} · ${S.conf}%</b></div>
-    <div class="row between" style="margin-top:8px"><span class="sub">模型回归概率</span><b class="grn mono">${pct(p[0])}</b></div>
-    <div class="row between" style="margin-top:8px"><span class="sub">模型首选</span><b class="cyan">${SLABEL[STATES[p.indexOf(Math.max(...p))]]}</b></div></div>
-  <div class="card"><h3>对账</h3><div class="sub" style="font-size:12.5px">差别不在结论，在权重；模型把假设摆上台，邀你校准，而非替代判断。</div></div>
-  <div class="row"><button class="btn primary sm grow" id="back">回去调权重</button>
+  <div class="card"><div class="scout-head">
+    <img class="scout-avatar" src="${CHAR_URL}">
+    <div><div class="nm">黄仁勋</div><div class="pos">CEO · 创始人</div></div>
+    <span class="verdict">${arch[0]}</span></div></div>
+  <div class="card"><h3>结局概率分布 <span class="tag">6000次蒙特卡洛密度</span></h3>
+    <div class="cv-wrap"><canvas id="density" height="300"></canvas></div>
+    <div class="readout"><span class="rt">解读</span>首选<b>${SLABEL[topS]}</b>中位 <b>${Math.round(topQ.P50*100)}%</b>，
+      P10–P90 为 ${Math.round(topQ.P10*100)}–${Math.round(topQ.P90*100)}%；回归中位仅 <b>${Math.round(m1.comeback.P50*100)}%</b>。
+      峰越尖、带越窄，模型对该路径越确定；这里不是点预测，是把不确定性画出来。</div></div>
+  <div class="card"><h3>五维决策形状</h3>
+    <div class="cv-wrap"><canvas id="pRadar" height="280"></canvas></div>
+    <div class="readout"><span class="rt">解读</span>${nm(ranked[0][0])}最高（${Math.round(ranked[0][1]*100)}）、
+      ${nm(ranked[4][0])}最低（${Math.round(ranked[4][1]*100)}）；形状偏向<b>${arch[0]}</b>，
+      最短的${nm(ranked[4][0])}是边际上最可能改写路径的变量。</div></div>
+  <div class="card"><h3>强项 / 弱项</h3>
+    <div class="sw-grid">
+      <div class="sw-col"><h4 class="grn">强项</h4>${strong.map(mb).join('')}</div>
+      <div class="sw-col weak"><h4>弱项</h4>${weak.map(mb).join('')}</div></div>
+    <div class="readout"><span class="rt">解读</span>强项集中在<b>${strong.map(x=>nm(x[0])).join('、')}</b>，
+      对应治理与资本压力；弱项<b>${weak.map(x=>nm(x[0])).join('、')}</b>意味着硬筹码与内部动员不足，
+      这正是模型压低回归概率的机制。</div></div>
+  <div class="card"><h3>关键观察</h3>
+    <div class="obs-row"><span class="sub">模型首选</span><b>${SLABEL[topS]}</b></div>
+    <div class="obs-row"><span class="sub">回归概率</span><b class="grn mono">${pct(p[0])}</b></div>
+    <div class="obs-row"><span class="sub">最高杠杆变量</span><b>${nm(sobTop[0])} · ${sobTop[1].toFixed(2)}</b></div>
+    <div class="obs-row"><span class="sub">你的直觉</span><b>${S.bet==='comeback'?'能回来':S.bet==='no'?'回不来':'未押'} · ${S.conf}%</b></div></div>
+  <div class="conclusion">${arch[1]}；模型只摆机制与区间，结论由你校准。</div>
+  <div class="row" style="margin-top:14px"><button class="btn primary sm grow" id="back">回去调权重</button>
     <button class="btn ghost sm grow" id="restart">清空重玩</button></div>
-  <div class="mut" style="font-size:10.5px;margin-top:12px">教学研究工具，不构成投资建议；缺证据不插值，已知偏差已披露。</div>`;
+  <div class="mut" style="font-size:10.5px;margin-top:12px">教学研究工具，不构成投资建议；分位数为6000次蒙特卡洛真实输出。</div>`;
+  drawDensityStrips(document.getElementById('density'),m1._acc,STATES,m1);
+  drawRadar(document.getElementById('pRadar'),ORDER.map(k=>S.knobs[k]),'#3ee0ff',ORDER.map(k=>nm(k)));
   document.getElementById('back').onclick=()=>location.hash='vars';
   document.getElementById('restart').onclick=()=>{localStorage.removeItem(KEY);S=fresh();save();renderHero();R.profile(el);};
 };
