@@ -663,6 +663,7 @@ R.detail=el=>{const x=S.knobs,r=fullResults(x),m1=r.m1;
   drawBars(document.getElementById('tor'),tor.map(t=>t.k),tor.map(t=>t.range),tor.map(()=>'#7c9bc2'),true);};
 
 R.sna=el=>{
+  if(R.sna._ro){R.sna._ro.disconnect();R.sna._ro=null;}
   const g=buildGraph(),hub=g.idx['黄仁勋本人'];
   const POS={'监管机构':[.14,.14],'独立董事':[.32,.21],'董事会成员（含董事长Harvey C. Jones）':[.5,.10],
     '机构股东':[.68,.21],'独立律所Wachtell与检察官Joon H. Kim':[.86,.14],
@@ -677,18 +678,39 @@ R.sna=el=>{
   for(let rm=0;rm<=hubEdges.length;rm++){if(rm>0){const l=hubEdges[rm-1].l;adj[l.a][l.b]-=l.s;adj[l.b][l.a]-=l.s;}
     series.push(adj[hub].reduce((a,b)=>a+b,0));}
   const lc=rel=>rel==='合规'?'#c96a72':(rel==='治理'||rel==='雇佣')?'#3d6396':'#8a7fc0';
+  /* 关系类型 → 旋钮敏感度（透明函数；默认参数下激活=1，与证据结构图一致） */
+  const REL_KNOB={'治理':{P:1.2},'雇佣':{P:.8,C:.6},'合规':{E:1.0,Pol:.8},'信息':{M:.7,P:.5},'资金':{M:1.0},'盟友':{C:.9,Pol:.5}};
+  function edgeActivation(rel){const w=REL_KNOB[rel]||{};let d=0;
+    for(const k in w){d+=w[k]*(S.knobs[k]-DATA.inputs[k]);}
+    return clamp(1+d,.35,1.85);}
+  /* 结构加权度（基线）与当前条件加权度（状态） */
+  const baseDegree=g.names.map(()=>0),curDegree=g.names.map(()=>0);
+  links.forEach(l=>{const act=edgeActivation(l.rel);
+    baseDegree[l.a]+=l.s;baseDegree[l.b]+=l.s;
+    curDegree[l.a]+=l.s*act;curDegree[l.b]+=l.s*act;});
+  const ASPECT=1.1;
+  function setupFormation(){const cv=document.getElementById('formation');if(!cv)return null;
+    const dpr=window.devicePixelRatio||1;
+    const w=cv.parentElement.clientWidth||cv.clientWidth||0;if(!w)return null;
+    const h=Math.round(w*ASPECT);
+    cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+    cv.style.width='100%';cv.style.height=h+'px';
+    const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+    return{ctx,w,h};}
   function draw(){
-    const cv=document.getElementById('formation'),{ctx,w,h}=setupCanvas(cv);
+    const setup=setupFormation();if(!setup)return;
+    const {ctx,w,h}=setup;
     ctx.fillStyle='#f2f6f7';ctx.beginPath();ctx.roundRect(0,0,w,h,12);ctx.fill();
     ctx.strokeStyle='#d8e2e9';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,h*.5);ctx.lineTo(w,h*.5);ctx.stroke();
     ctx.beginPath();ctx.arc(w/2,h*.5,30,0,7);ctx.stroke();
     links.forEach((l,i)=>{const A=POS[g.names[l.a]]||[.5,.5],B=POS[g.names[l.b]]||[.5,.5];
-      const x1=A[0]*w,y1=A[1]*h,x2=B[0]*w,y2=B[1]*h,cut=removed.has(i);
+      const x1=A[0]*w,y1=A[1]*h,x2=B[0]*w,y2=B[1]*h,cut=removed.has(i),act=edgeActivation(l.rel);
       ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
       if(cut){ctx.strokeStyle='rgba(132,146,164,.35)';ctx.lineWidth=.9;ctx.setLineDash([4,4]);}
-      else{ctx.strokeStyle=lc(l.rel);ctx.globalAlpha=.55;ctx.lineWidth=1+l.s*1.7;ctx.setLineDash([]);}
+      else{ctx.strokeStyle=lc(l.rel);ctx.globalAlpha=clamp(.3+act*.35,.35,.95);ctx.lineWidth=1+l.s*act*1.7;ctx.setLineDash([]);}
       ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;});
-    g.names.forEach((n,i)=>{const P=POS[n]||[.5,.5],x=P[0]*w,y=P[1]*h,r=7+g.between[i]*16,ishub=i===hub;
+    g.names.forEach((n,i)=>{const P=POS[n]||[.5,.5],x=P[0]*w,y=P[1]*h,ishub=i===hub;
+      const f=curDegree[i]/(baseDegree[i]||1),r=(7+g.between[i]*16)*clamp(f,.6,1.5);
       ctx.beginPath();ctx.arc(x,y,r,0,7);
       ctx.fillStyle=ishub?'#3d6396':'#fff';ctx.fill();
       ctx.lineWidth=ishub?2:1.5;ctx.strokeStyle=ishub?'#1b2b45':'#7c9bc2';ctx.stroke();
@@ -696,15 +718,16 @@ R.sna=el=>{
       ctx.fillText(shortName(n),x,y+r+13);});}
   el.innerHTML=`
   <div class="card"><h3>阵容场域 <span class="tag">阵型 · 化学连线</span></h3>
-    <div class="cv-wrap"><canvas id="formation" height="440"></canvas></div>
+    <div class="cv-wrap"><canvas id="formation"></canvas></div>
     <div class="row" style="margin-top:11px"><button class="btn primary sm grow" id="iso" type="button">逐步隔离老黄</button>
       <button class="btn ghost sm grow" id="snaReset" type="button">重置</button></div>
     <div class="field-legend"><span><i style="background:#3d6396"></i>治理/雇佣</span>
       <span><i style="background:#c96a72"></i>合规</span>
       <span><i style="background:#8a7fc0"></i>资金/信息/盟友</span>
-      <span class="mut">节点大小 = 介数中心度</span></div>
+      <span class="mut">节点大小 = 当前条件连接强度（基底为介数）</span></div>
     <div class="readout"><span class="rt">解读</span>老黄介数 <b>${g.between[hub].toFixed(3)}</b> 全场最高，
-      是治理与信息的必经节点，<b>${hubEdges.length}</b> 条关系直接连他，结构高度中心化；点隔离可看到切断这些连线后网络如何重组。</div></div>
+      是治理与信息的必经节点，<b>${hubEdges.length}</b> 条关系直接连他，结构高度中心化；点隔离可看到切断这些连线后网络如何重组。</div>
+    <div class="readout"><span class="rt">当前</span>拓扑固定为证据结构；调滑块时边的<b>当前关系强度</b>与节点半径按透明函数实时变化（默认参数下与结构图完全一致），不代表出现了新结构。</div></div>
   <div class="grid2">
     <div class="card" style="margin:0"><h3>介数中心度</h3><div id="bc"></div>
       <div class="readout"><span class="rt">解读</span>介数衡量「必经之路」：老黄 <b>${bRank[0][1].toFixed(3)}</b>、
@@ -714,6 +737,10 @@ R.sna=el=>{
       <div class="readout"><span class="rt">解读</span>每切断一条强关系，加权枢纽度由 <b>${series[0].toFixed(2)}</b>
         降至 <b>${series[series.length-1].toFixed(2)}</b>；曲线越陡，网络对老黄的依赖越集中。</div></div></div>`;
   draw();
+  let pending=false;
+  const ro=new ResizeObserver(()=>{if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;draw();});});
+  ro.observe(document.getElementById('formation').parentElement);
+  R.sna._ro=ro;
   document.getElementById('iso').onclick=()=>{step=Math.min(step+1,hubEdges.length);
     removed.clear();for(let n=0;n<step;n++)removed.add(hubEdges[n].i);draw();toast('已隔离 '+removed.size+' 条关系');};
   document.getElementById('snaReset').onclick=()=>{step=0;removed.clear();draw();};
